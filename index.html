@@ -1,161 +1,264 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ml">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SჄS MANNARKKAD ZONE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYS Mannarkkad Snehalokam - Poster Generator</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-    .card { background: white; max-width: 400px; width: 100%; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    
-    /* ഇംഗ്ലീഷ് ടൈറ്റിൽ ഡിസൈൻ */
-    .title-main { font-size: 22px; font-weight: 800; color: #1a237e; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
-    .title-sub { font-size: 14px; font-weight: 600; color: #555; margin-bottom: 15px; }
-
-    .canvas-container { position: relative; width: 100%; aspect-ratio: 1/1; background: #eee; margin-bottom: 15px; overflow: hidden; border-radius: 8px; cursor: grab; touch-action: none; }
-    canvas { width: 100%; height: 100%; }
-    .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-    .btn { background: #e4e6eb; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-    .btn-upload { background: #0066cc; color: white; padding: 12px; border-radius: 6px; display: block; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-    input[type="file"] { display: none; }
-    .btn-download { background: #25D366; color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    h2 {
+      margin-top: 0;
+      color: #1a237e;
+      font-size: 22px;
+    }
+    p {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    #canvas-container {
+      width: 100%;
+      position: relative;
+      background-color: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      touch-action: none;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: grab;
+    }
+    canvas:active {
+      cursor: grabbing;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    button, .file-upload-label {
+      background-color: #0d47a1;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-block;
+      transition: background-color 0.2s;
+    }
+    button:hover, .file-upload-label:hover {
+      background-color: #1565c0;
+    }
+    .secondary-btn {
+      background-color: #cfd8dc;
+      color: #37474f;
+    }
+    .secondary-btn:hover {
+      background-color: #b0bec5;
+    }
+    .download-btn {
+      background-color: #2e7d32;
+    }
+    .download-btn:hover {
+      background-color: #388e3c;
+    }
+    input[type="file"] {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 class="title-main">SYS MANNARKKAD ZONE</h2>
-  <p class="title-sub">SNEHALOKAM - Darul Furqan Thenkara</p>
+  <div class="container">
+    <h2>SYS MANNARKKAD ZONE</h2>
+    <p>SNEHALOKAM - Darul Furqan Thenkara</p>
 
-  <div class="canvas-container">
-    <canvas id="photoCanvas" width="1000" height="1000"></canvas>
+    <div id="canvas-container">
+      <canvas id="posterCanvas" width="1080" height="1080"></canvas>
+    </div>
+
+    <div class="controls">
+      <div class="btn-group">
+        <button type="button" class="secondary-btn" id="zoomInBtn">Zoom In (+)</button>
+        <button type="button" class="secondary-btn" id="zoomOutBtn">Zoom Out (-)</button>
+      </div>
+
+      <label class="file-upload-label" for="imageLoader">Select Photo</label>
+      <input type="file" id="imageLoader" accept="image/*">
+
+      <button type="button" class="download-btn" id="downloadBtn">Download Poster</button>
+    </div>
   </div>
 
-  <div class="controls">
-    <button class="btn" onclick="zoom(1.1)">Zoom In (+)</button>
-    <button class="btn" onclick="zoom(0.9)">Zoom Out (-)</button>
-  </div>
+  <script>
+    const canvas = document.getElementById('posterCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageLoader = document.getElementById('imageLoader');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
 
-  <label class="btn-upload">
-    Select Photo
-    <input type="file" id="upload" accept="image/*">
-  </label>
+    let frameImage = new Image();
+    frameImage.crossOrigin = "anonymous";
+    frameImage.src = 'https://i.ibb.co/7xtTRpzP/png-sys-3.png';
 
-  <button class="btn-download" id="downloadBtn">Download Poster</button>
-</div>
+    let userImage = null;
+    let userImgX = 0;
+    let userImgY = 0;
+    let scale = 1;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
 
-<script>
-  const canvas = document.getElementById('photoCanvas');
-  const ctx = canvas.getContext('2d');
-  const upload = document.getElementById('upload');
-  const downloadBtn = document.getElementById('downloadBtn');
+    frameImage.onload = () => {
+      drawCanvas();
+    };
 
-  let userImg = new Image();
-  let frameImg = new Image();
-  
-  frameImg.crossOrigin = "Anonymous";
-  frameImg.src = 'https://i.ibb.co/cX3C95b2/frame-png.png';
+    imageLoader.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-  let imgX = 0, imgY = 0, scale = 1;
-  let isDragging = false, startX = 0, startY = 0;
-  let initialPinchDist = null;
-
-  frameImg.onload = () => draw();
-
-  upload.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        userImg = new Image();
-        userImg.onload = () => {
-          scale = Math.max(canvas.width / userImg.width, canvas.height / userImg.height) * 0.6;
-          imgX = (canvas.width - userImg.width * scale) / 1.3;
-          imgY = (canvas.height - userImg.height * scale) / 2;
-          draw();
+        userImage = new Image();
+        userImage.onload = () => {
+          scale = Math.max(canvas.width / userImage.width, canvas.height / userImage.height);
+          userImgX = (canvas.width - userImage.width * scale) / 2;
+          userImgY = (canvas.height - userImage.height * scale) / 2;
+          drawCanvas();
         };
-        userImg.src = event.target.result;
+        userImage.src = event.target.result;
       };
       reader.readAsDataURL(file);
+    });
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (userImage) {
+        ctx.drawImage(
+          userImage,
+          userImgX,
+          userImgY,
+          userImage.width * scale,
+          userImage.height * scale
+        );
+      }
+
+      if (frameImage.complete && frameImage.naturalWidth !== 0) {
+        ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+      }
     }
-  });
 
-  function zoom(factor) {
-    if (!userImg.src) return;
-    scale *= factor;
-    draw();
-  }
+    // Drag Controls (Mouse)
+    canvas.addEventListener('mousedown', (e) => {
+      if (!userImage) return;
+      isDragging = true;
+      startX = e.offsetX;
+      startY = e.offsetY;
+    });
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDragging || !userImage) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
 
-    // 1. ഫോട്ടോ ബാക്ക്ഗ്രൗണ്ടിൽ ഫുൾ ആയി വരയ്ക്കുന്നു
-    if (userImg.src) {
-      ctx.drawImage(userImg, imgX, imgY, userImg.width * scale, userImg.height * scale);
-    }
+      const dx = (e.offsetX - startX) * scaleX;
+      const dy = (e.offsetY - startY) * scaleY;
 
-    // 2. ഫ്രെയിം മുകളിൽ വരയ്ക്കുന്നു
-    if (frameImg.complete) {
-      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-    }
-  }
+      userImgX += dx;
+      userImgY += dy;
+      startX = e.offsetX;
+      startY = e.offsetY;
+      drawCanvas();
+    });
 
-  const getPos = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
-  };
+    window.addEventListener('mouseup', () => { isDragging = false; });
 
-  // ഡ്രാഗ് & മൂവ്
-  canvas.addEventListener('mousedown', (e) => { if (userImg.src) { isDragging = true; const p = getPos(e); startX = p.x - imgX; startY = p.y - imgY; } });
-  canvas.addEventListener('mousemove', (e) => { if (isDragging) { const p = getPos(e); imgX = p.x - startX; imgY = p.y - startY; draw(); } });
-  canvas.addEventListener('mouseup', () => isDragging = false);
+    // Drag Controls (Touch)
+    canvas.addEventListener('touchstart', (e) => {
+      if (!userImage || e.touches.length !== 1) return;
+      isDragging = true;
+      const rect = canvas.getBoundingClientRect();
+      startX = e.touches[0].clientX - rect.left;
+      startY = e.touches[0].clientY - rect.top;
+    });
 
-  // മൗസ് വീൽ സൂം
-  canvas.addEventListener('wheel', (e) => {
-    if (!userImg.src) return;
-    e.preventDefault();
-    zoom(e.deltaY < 0 ? 1.05 : 0.95);
-  }, { passive: false });
-
-  // ടച്ച് സൂം & ഡ്രാഗ്
-  canvas.addEventListener('touchstart', (e) => {
-    if (!userImg.src) return;
-    if (e.touches.length === 1) {
-      isDragging = true; const p = getPos(e); startX = p.x - imgX; startY = p.y - imgY;
-    } else if (e.touches.length === 2) {
-      isDragging = false;
-      initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    }
-  });
-
-  canvas.addEventListener('touchmove', (e) => {
-    if (!userImg.src) return;
-    if (isDragging && e.touches.length === 1) {
-      const p = getPos(e); imgX = p.x - startX; imgY = p.y - startY; draw();
-    } else if (e.touches.length === 2 && initialPinchDist) {
+    canvas.addEventListener('touchmove', (e) => {
+      if (!isDragging || !userImage || e.touches.length !== 1) return;
       e.preventDefault();
-      const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      zoom(currentDist / initialPinchDist);
-      initialPinchDist = currentDist;
-    }
-  }, { passive: false });
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches[0].clientX - rect.left;
+      const clientY = e.touches[0].clientY - rect.top;
 
-  canvas.addEventListener('touchend', () => { isDragging = false; initialPinchDist = null; });
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
 
-  downloadBtn.addEventListener('click', () => {
-    if (!userImg.src) { alert('Please select a photo first!'); return; }
-    const link = document.createElement('a');
-    link.download = 'sys-snehalokam-poster.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  });
-</script>
+      const dx = (clientX - startX) * scaleX;
+      const dy = (clientY - startY) * scaleY;
 
+      userImgX += dx;
+      userImgY += dy;
+      startX = clientX;
+      startY = clientY;
+      drawCanvas();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => { isDragging = false; });
+
+    // Zoom Controls
+    zoomInBtn.addEventListener('click', () => {
+      if (!userImage) return;
+      scale *= 1.1;
+      drawCanvas();
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      if (!userImage) return;
+      scale /= 1.1;
+      drawCanvas();
+    });
+
+    // Download Handler
+    downloadBtn.addEventListener('click', () => {
+      if (!userImage) {
+        alert('ദയവായി ആദ്യം ഒരു ഫോട്ടോ സെലക്ട് ചെയ്യുക!');
+        return;
+      }
+      const link = document.createElement('a');
+      link.download = 'sys-snehalokam-poster.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
 </body>
 </html>
