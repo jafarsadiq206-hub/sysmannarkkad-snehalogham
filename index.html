@@ -7,11 +7,11 @@
   <style>
     body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
     .container { background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 450px; width: 100%; text-align: center; }
-    #canvas-container { width: 100%; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 15px; touch-action: none; position: relative; }
+    #canvas-container { width: 100%; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 15px; touch-action: none; }
     canvas { width: 100%; height: auto; display: block; touch-action: none; }
-    .controls { display: flex; flex-direction: column; gap: 12px; }
+    .controls { display: flex; flex-direction: column; gap: 10px; }
     .btn-group { display: flex; gap: 10px; justify-content: center; }
-    button, .file-upload-label { background-color: #0d47a1; color: white; border: none; padding: 13px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+    button, .file-upload-label { background-color: #0d47a1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
     .secondary-btn { background-color: #cfd8dc; color: #263238; width: auto; flex: 1; }
     .download-btn { background-color: #1b5e20; }
     input[type="file"] { display: none; }
@@ -44,50 +44,45 @@
     frameImage.crossOrigin = "anonymous";
     frameImage.src = 'frame.png.png';
 
-    let userImage = null, userImgX = 0, userImgY = 0, scale = 1;
-    let isDragging = false, lastPointerX = 0, lastPointerY = 0;
-
-    frameImage.onload = () => { drawCanvas(); };
+    let userImage = null, userImgX = 0, userImgY = 0, scale = 0.5;
+    let isDragging = false, lastX = 0, lastY = 0;
 
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (userImage) {
-        ctx.drawImage(userImage, userImgX, userImgY, userImage.width * scale, userImage.height * scale);
-      }
+      if (userImage) ctx.drawImage(userImage, userImgX, userImgY, userImage.width * scale, userImage.height * scale);
       if (frameImage.complete) ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
     }
 
-    // Pointer Events (ഇതാണ് ഡ്രാഗിംഗിന് സഹായിക്കുന്നത്)
-    canvas.addEventListener('pointerdown', (e) => {
-      isDragging = true;
-      lastPointerX = e.clientX;
-      lastPointerY = e.clientY;
-    });
+    frameImage.onload = () => drawCanvas();
 
-    window.addEventListener('pointermove', (e) => {
+    // Drag Logic (Mobile & Mouse)
+    const startDrag = (x, y) => { isDragging = true; lastX = x; lastY = y; };
+    const moveDrag = (x, y) => {
       if (!isDragging || !userImage) return;
-      const dx = (e.clientX - lastPointerX) * (canvas.width / canvas.clientWidth);
-      const dy = (e.clientY - lastPointerY) * (canvas.height / canvas.clientHeight);
-      userImgX += dx;
-      userImgY += dy;
-      lastPointerX = e.clientX;
-      lastPointerY = e.clientY;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      userImgX += (x - lastX) * scaleX;
+      userImgY += (y - lastY) * scaleY;
+      lastX = x; lastY = y;
       drawCanvas();
-    });
+    };
 
-    window.addEventListener('pointerup', () => { isDragging = false; });
+    // Mobile events
+    canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
+    canvas.addEventListener('touchend', () => isDragging = false);
 
-    // File Input
+    // Mouse events
+    canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', () => isDragging = false);
+
     document.getElementById('imageLoader').addEventListener('change', (e) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         userImage = new Image();
-        userImage.onload = () => {
-          scale = 0.5; // Start with a decent scale
-          userImgX = (canvas.width - userImage.width * scale) / 2;
-          userImgY = (canvas.height - userImage.height * scale) / 2;
-          drawCanvas();
-        };
+        userImage.onload = () => { scale = 0.5; userImgX = 200; userImgY = 200; drawCanvas(); };
         userImage.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
