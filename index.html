@@ -128,7 +128,7 @@
 
     let frameImage = new Image();
     frameImage.crossOrigin = "anonymous";
-    frameImage.src = 'https://i.ibb.co/7xtTRpzP/png-sys-3.png';
+    frameImage.src = 'frame.png.png';
 
     let userImage = null;
     let userImgX = 0;
@@ -256,7 +256,7 @@
       }
       const link = document.createElement('a');
       link.download = 'sys-snehalokam-poster.png';
-      link.href = canvas.toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
     });
   </script>
