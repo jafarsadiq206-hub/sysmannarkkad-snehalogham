@@ -7,7 +7,7 @@
   <style>
     body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
     .container { background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 450px; width: 100%; text-align: center; }
-    #canvas-container { width: 100%; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 15px; touch-action: none; }
+    #canvas-container { width: 100%; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 15px; touch-action: none; position: relative; }
     canvas { width: 100%; height: auto; display: block; touch-action: none; }
     .controls { display: flex; flex-direction: column; gap: 10px; }
     .btn-group { display: flex; gap: 10px; justify-content: center; }
@@ -46,6 +46,7 @@
 
     let userImage = null, userImgX = 0, userImgY = 0, scale = 0.5;
     let isDragging = false, lastX = 0, lastY = 0;
+    let initialPinchDist = 0, startScale = 1;
 
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -55,34 +56,54 @@
 
     frameImage.onload = () => drawCanvas();
 
-    // Drag Logic (Mobile & Mouse)
-    const startDrag = (x, y) => { isDragging = true; lastX = x; lastY = y; };
-    const moveDrag = (x, y) => {
-      if (!isDragging || !userImage) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      userImgX += (x - lastX) * scaleX;
-      userImgY += (y - lastY) * scaleY;
-      lastX = x; lastY = y;
-      drawCanvas();
-    };
+    // Touch logic (Drag + Pinch Zoom)
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        startScale = scale;
+      }
+    }, { passive: false });
 
-    // Mobile events
-    canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
-    canvas.addEventListener('touchend', () => isDragging = false);
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1 && isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const factor = canvas.width / rect.width;
+        userImgX += (e.touches[0].clientX - lastX) * factor;
+        userImgY += (e.touches[0].clientY - lastY) * factor;
+        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+      } else if (e.touches.length === 2 && initialPinchDist > 0) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        scale = startScale * (dist / initialPinchDist);
+      }
+      drawCanvas();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => { isDragging = false; initialPinchDist = 0; });
 
     // Mouse events
-    canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    canvas.addEventListener('mousedown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging || !userImage) return;
+      const rect = canvas.getBoundingClientRect();
+      const factor = canvas.width / rect.width;
+      userImgX += (e.clientX - lastX) * factor;
+      userImgY += (e.clientY - lastY) * factor;
+      lastX = e.clientX; lastY = e.clientY;
+      drawCanvas();
+    });
     window.addEventListener('mouseup', () => isDragging = false);
 
     document.getElementById('imageLoader').addEventListener('change', (e) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         userImage = new Image();
-        userImage.onload = () => { scale = 0.5; userImgX = 200; userImgY = 200; drawCanvas(); };
+        userImage.onload = () => { scale = 0.5; userImgX = 0; userImgY = 0; drawCanvas(); };
         userImage.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
